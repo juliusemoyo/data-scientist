@@ -32,13 +32,13 @@ Passionate about turning data into insights and building intelligent systems. I 
 ![Anaconda](https://img.shields.io/badge/Anaconda-44A833?style=for-the-badge&logo=anaconda&logoColor=white)
 
 ### **Data visualization:**
-![Power BI]
-![Altair]
-![Matplotlib](https://logo.svgcdn.com/l/matplotlib.png)
-![Plotly](https://plotly.com/brand-guidelines/)
-![Seaborn](https://logo.svgcdn.com/l/seaborn.svg)
-![Ggplot2](https://upload.wikimedia.org/wikipedia/commons/1/1b/Ggplot2_logo.svg)
-![Tableau](https://logowik.com/tableau-logo-vector-svg-png-free-download-22089.html)
+![Power BI](https://upload.wikimedia.org/wikipedia/commons/3/3e/Microsoft_Power_BI_Logo.svg)
+![Altair](https://upload.wikimedia.org/wikipedia/commons/3/3e/Altair_Logo.svg)
+![Matplotlib](https://matplotlib.org/stable/_images/sphx_glr_logos2_001.png)
+![Plotly](https://images.plot.ly/logo/new-branding/plotly-logomark.png)
+![Seaborn](https://seaborn.pydata.org/_images/seaborn-logo.png)
+![Ggplot2](https://ggplot2.tidyverse.org/logo.png)
+![Tableau](https://upload.wikimedia.org/wikipedia/commons/1/1b/Tableau_Logo.svg)
 ---
 
 ## 📊 GitHub Stats
