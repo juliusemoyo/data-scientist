@@ -91,7 +91,7 @@ I am a **data scientist** passionate about **Machine Learning, AI**, and **Data 
 - **Languages**: Python, R, C++
 - **ML Frameworks**: TensorFlow, Scikit-Learn, Keras
 - **Databases**: SQL, MongoDB
-- **Data Visualization.
+- **Data Visualization**: PowerBI. Matplotlib, seaborn
 - **Video Analytics**: Yolov5+DeepSort, Python and OpenCV
 - **Data Enginnering using ML**:
 - **Other Tools**: Anaconda, Power BI, Jupyter, VS Code
