@@ -101,7 +101,7 @@ I am a **data scientist** passionate about **Machine Learning, AI**, and **Data 
 
 - **Languages**: Python, R, C++
 - **Machine Learning Frameworks**: TensorFlow, Scikit-Learn
-- **Databases**: MongoDB, SQL
+- **Databases**: MongoDB, SQL, NoSQL
 - **Other Tools**: Anaconda, Power BI, Jupyter, VS Code
 
 ---
