@@ -31,6 +31,14 @@ Passionate about turning data into insights and building intelligent systems. I 
 ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
 ![Anaconda](https://img.shields.io/badge/Anaconda-44A833?style=for-the-badge&logo=anaconda&logoColor=white)
 
+### **Data visualization:**
+![Power BI]
+![Altair]
+!Matplotlib
+![Plotly]
+![Seaborn]
+![Ggplot2]
+![Tableau]
 ---
 
 ## 📊 GitHub Stats
