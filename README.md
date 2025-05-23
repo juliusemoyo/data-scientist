@@ -34,11 +34,11 @@ Passionate about turning data into insights and building intelligent systems. I 
 ### **Data visualization:**
 ![Power BI]
 ![Altair]
-!Matplotlib
-![Plotly]
-![Seaborn]
-![Ggplot2]
-![Tableau]
+![Matplotlib](https://logo.svgcdn.com/l/matplotlib.png)
+![Plotly](https://plotly.com/brand-guidelines/)
+![Seaborn](https://logo.svgcdn.com/l/seaborn.svg)
+![Ggplot2](https://upload.wikimedia.org/wikipedia/commons/1/1b/Ggplot2_logo.svg)
+![Tableau](https://logowik.com/tableau-logo-vector-svg-png-free-download-22089.html)
 ---
 
 ## 📊 GitHub Stats
