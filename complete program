@@ -1,0 +1,350 @@
+import os
+import sqlite3
+import subprocess
+import datetime
+
+# Initialize Database
+db = sqlite3.connect("institution_db.sqlite")
+cursor = db.cursor()
+
+# --- Database Schema ---
+cursor.execute("""PRAGMA foreign_keys = OFF;""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS students (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admission_number TEXT UNIQUE,
+    name TEXT,
+    course TEXT,
+    graduation_year INTEGER,
+    phone_number TEXT UNIQUE
+);
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS staff (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    department TEXT,
+    phone_number TEXT UNIQUE
+);
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS registered_devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial_number TEXT UNIQUE,
+    model_number TEXT,
+    device_type TEXT,
+    user_id INTEGER,
+    reported_stolen BOOLEAN DEFAULT 0,
+    user_type TEXT,
+    FOREIGN KEY (user_id) REFERENCES students(id),
+    FOREIGN KEY (user_id) REFERENCES staff(id)
+);
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS device_activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial_number TEXT,
+    location TEXT,
+    ssid TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (serial_number) REFERENCES registered_devices(serial_number)
+);
+""")
+
+db.commit()
+
+# --- Utility Functions ---
+def get_serial_and_model():
+    try:
+        if os.name == "nt":
+            serial = os.popen("wmic bios get serialnumber").read().strip().split("\n")[1].strip()
+            model = os.popen("wmic csproduct get name").read().strip().split("\n")[1].strip()
+        else:
+            serial = os.popen("sudo dmidecode -s system-serial-number").read().strip()
+            model = os.popen("sudo dmidecode -s system-product-name").read().strip()
+        return serial, model
+    except Exception as e:
+        print("Error getting serial/model:", e)
+        return "UNKNOWN", "UNKNOWN"
+
+def auto_remove_graduates():
+    current_year = datetime.datetime.now().year
+    cursor.execute("DELETE FROM students WHERE graduation_year < ?", (current_year,))
+    db.commit()
+
+def check_stolen_device(serial):
+    cursor.execute("SELECT * FROM registered_devices WHERE serial_number = ? AND reported_stolen = 1", (serial,))
+    return cursor.fetchone() is not None
+
+def get_connected_wifi():
+    if os.name == "nt":
+        result = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
+        for line in result.stdout.split("\n"):
+            if "SSID" in line and "BSSID" not in line:
+                return line.split(":")[1].strip()
+    return "Unknown"
+
+# --- Device Activity Logging ---
+def log_device_activity(serial, location, ssid):
+    # Log device activity
+    cursor.execute("""
+        INSERT INTO device_activity_log (serial_number, location, ssid)
+        VALUES (?, ?, ?)
+    """, (serial, location, ssid))
+    db.commit()
+
+# --- Registration Functions ---
+def register_student():
+    print("\n👤 Register New Student")
+    admission = input("Admission Number: ")
+    name = input("Full Name: ")
+    course = input("Course: ")
+    year = int(input("Graduation Year: "))
+    phone = input("Phone Number: ")
+
+    try:
+        cursor.execute("""
+            INSERT INTO students (admission_number, name, course, graduation_year, phone_number)
+            VALUES (?, ?, ?, ?, ?)
+        """, (admission, name, course, year, phone))
+        db.commit()
+        print("✅ Student registered successfully.")
+    except sqlite3.IntegrityError:
+        print("❌ Student already exists!")
+
+def register_staff():
+    print("\n🧑‍🏫 Register New Staff")
+    name = input("Full Name: ")
+    department = input("Department: ")
+    phone = input("Phone Number: ")
+
+    try:
+        cursor.execute("""
+            INSERT INTO staff (name, department, phone_number)
+            VALUES (?, ?, ?)
+        """, (name, department, phone))
+        db.commit()
+        print("✅ Staff registered successfully.")
+    except sqlite3.IntegrityError:
+        print("❌ Staff already exists!")
+
+def register_device():
+    print("\n💻 Register Device")
+    device_type = input("Enter Device Type (Laptop/Phone/Tablet/Other): ").strip().title()
+    if device_type == "Laptop":
+        serial, model = get_serial_and_model()
+    else:
+        serial = input("Enter Serial Number: ")
+        model = input("Enter Model Number: ")
+
+    print(f"Detected Serial: {serial}")
+    print(f"Model: {model}")
+    print(f"Type: {device_type}")
+
+    if check_stolen_device(serial):
+        print("🚨 This device has been reported as stolen!")
+        return
+
+    user_type = input("Enter User Type (Student/Staff): ").strip().lower()
+
+    if user_type == "student":
+        admission = input("Enter Student Admission Number: ")
+        cursor.execute("SELECT id FROM students WHERE admission_number = ?", (admission,))
+    elif user_type == "staff":
+        phone = input("Enter Staff Phone Number: ")
+        cursor.execute("SELECT id FROM staff WHERE phone_number = ?", (phone,))
+    else:
+        print("❌ Invalid user type.")
+        return
+
+    user = cursor.fetchone()
+    if not user:
+        print(f"❌ {user_type.title()} not found.")
+        return
+
+    user_id = user[0]
+    try:
+        cursor.execute("""
+            INSERT INTO registered_devices (serial_number, model_number, device_type, user_id, user_type)
+            VALUES (?, ?, ?, ?, ?)
+        """, (serial, model, device_type, user_id, user_type))
+        db.commit()
+        print("✅ Device registered successfully.")
+    except sqlite3.IntegrityError:
+        print("❌ This device is already registered.")
+
+# --- Management Functions ---
+def report_stolen_device():
+    print("\n🚨 Report Stolen Device")
+    serial = input("Enter Serial Number: ")
+    cursor.execute("UPDATE registered_devices SET reported_stolen = 1 WHERE serial_number = ?", (serial,))
+    if cursor.rowcount > 0:
+        db.commit()
+        print("✅ Device reported as stolen.")
+        track_stolen_device(serial)
+    else:
+        print("❌ Device not found in system.")
+
+def track_stolen_device(serial):
+    print("\n🔍 Tracking Stolen Device Location")
+    cursor.execute("SELECT serial_number, model_number, device_type FROM registered_devices WHERE serial_number = ?", (serial,))
+    device = cursor.fetchone()
+    if not device:
+        print("❌ Device not found.")
+        return
+
+    print(f"Tracking Device: {device[0]} - {device[1]} ({device[2]})")
+    
+    # Log the device activity at the time of tracking
+    wifi = get_connected_wifi()  # You can use this function to get the Wi-Fi SSID
+    location = "Unknown"  # Or replace with actual logic if you can get the device's location
+
+    log_device_activity(serial, location, wifi)  # Log the activity
+
+    cursor.execute("""
+    SELECT * FROM device_activity_log WHERE serial_number = ? ORDER BY timestamp DESC LIMIT 5
+    """, (serial,))
+    activities = cursor.fetchall()
+    
+    if activities:
+        for activity in activities:
+            print(f"📍 Location: {activity[1]} | Time: {activity[2]} | SSID: {activity[3]}")
+    else:
+        print("❌ No location data available for this device.")
+
+def check_device():
+    print("\n🔍 Check Device Status")
+    serial = input("Enter Serial Number: ")
+    cursor.execute("SELECT * FROM registered_devices WHERE serial_number = ?", (serial,))
+    device = cursor.fetchone()
+    if not device:
+        print("❌ Device not found.")
+        return
+
+    _, _, model, dtype, user_id, stolen, user_type = device
+
+    if user_type == "student":
+        cursor.execute("SELECT name, course, phone_number FROM students WHERE id = ?", (user_id,))
+    else:
+        cursor.execute("SELECT name, department, phone_number FROM staff WHERE id = ?", (user_id,))
+
+    user = cursor.fetchone()
+    if not user:
+        print("❌ Owner not found.")
+        return
+
+    name, field, phone = user
+    print(f"👤 Owner: {name} | {user_type.title()} | {field}")
+    print(f"📱 Phone: {phone}")
+    print(f"💻 Model: {model}")
+    print(f"📦 Type: {dtype}")
+    print("🚨 Status: STOLEN" if stolen else "✅ Status: NOT STOLEN")
+
+def remove_device():
+    print("\n🗑️ Remove Registered Device")
+    user_type = input("Is the user a Student or Staff? ").strip().lower()
+
+    if user_type == "student":
+        id_input = input("Enter Student Admission Number: ")
+        cursor.execute("SELECT id FROM students WHERE admission_number = ?", (id_input,))
+    else:
+        id_input = input("Enter Staff Phone Number: ")
+        cursor.execute("SELECT id FROM staff WHERE phone_number = ?", (id_input,))
+
+    user = cursor.fetchone()
+    if not user:
+        print("❌ User not found.")
+        return
+
+    user_id = user[0]
+    cursor.execute("""
+        SELECT serial_number, model_number, device_type FROM registered_devices
+        WHERE user_id = ? AND user_type = ?
+    """, (user_id, user_type))
+    devices = cursor.fetchall()
+
+    if not devices:
+        print("⚠️ No registered devices for this user.")
+        return
+
+    print("🔍 Registered Devices:")
+    for idx, (serial, model, dtype) in enumerate(devices, 1):
+        print(f"{idx}. {dtype} | Serial: {serial}, Model: {model}")
+
+    serial_to_remove = input("Enter Serial Number of device to remove: ")
+    cursor.execute("""
+        DELETE FROM registered_devices
+        WHERE serial_number = ? AND user_id = ? AND user_type = ?
+    """, (serial_to_remove, user_id, user_type))
+
+    if cursor.rowcount > 0:
+        db.commit()
+        print("✅ Device removed successfully.")
+    else:
+        print("❌ Device not found or does not belong to this user.")
+
+def show_all_devices():
+    print("\n📄 Registered Devices List")
+    cursor.execute("SELECT * FROM registered_devices")
+    records = cursor.fetchall()
+    if not records:
+        print("ℹ️ No devices registered yet.")
+        return
+
+    for idx, device in enumerate(records, 1):
+        _, serial, model, dtype, user_id, stolen, user_type = device
+        if user_type == "student":
+            cursor.execute("SELECT name FROM students WHERE id = ?", (user_id,))
+        else:
+            cursor.execute("SELECT name FROM staff WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+        name = user[0] if user else "Unknown"
+
+        status = "🚨 STOLEN" if stolen else "✅ NOT STOLEN"
+        print(f"{idx}. {name} | {user_type.title()} | {dtype} | Model: {model} | Serial: {serial} | Status: {status}")
+
+# --- Main Menu ---
+auto_remove_graduates()
+
+while True:
+    print("\n📚 Institution Device Manager")
+    print("1️⃣ Register Student")
+    print("2️⃣ Register Staff")
+    print("3️⃣ Register Device")
+    print("4️⃣ Check Device Info")
+    print("5️⃣ Report Stolen Device")
+    print("6️⃣ Show Connected WiFi")
+    print("7️⃣ 🗑️ Remove Device")
+    print("8️⃣ 📄 Show All Registered Devices")
+    print("0️⃣ Exit")
+
+    choice = input("Choose an option: ")
+
+    if choice == "1":
+        register_student()
+    elif choice == "2":
+        register_staff()
+    elif choice == "3":
+        register_device()
+    elif choice == "4":
+        check_device()
+    elif choice == "5":
+        report_stolen_device()
+    elif choice == "6":
+        wifi = get_connected_wifi()
+        print(f"📶 Connected WiFi: {wifi}")
+    elif choice == "7":
+        remove_device()
+    elif choice == "8":
+        show_all_devices()
+    elif choice == "0":
+        print("Goodbye 👋")
+        break
+    else:
+        print("❌ Invalid option!")
+
+db.close()
