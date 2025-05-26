@@ -1,0 +1,189 @@
+# 🎓 Institution Device Management System
+
+This is a Python-based system to **register and track devices** (like laptops, phones, tablets) belonging to students and staff in an institution. It uses **SQLite** for storage and allows reporting & tracking of stolen devices.
+
+---
+
+## 📦 Features
+
+* Register **students**, **staff**, and their **devices**
+* Check if a device is **registered or reported stolen**
+* Automatically remove **graduated students**
+* Log device activity (Wi-Fi + timestamp)
+* Track stolen devices and view their activity log
+* View or remove any device
+
+---
+
+## 🚀 Setup Instructions
+
+### 1. 🔧 Prerequisites
+
+* Python 3.6+
+* Works on Windows, macOS, and Linux
+
+### 2. 🗂️ Clone the Project
+
+```bash
+git clone https://github.com/your-username/institution-device-manager.git
+cd institution-device-manager
+```
+
+### 3. 📦 Install Required Modules (all built-in)
+
+This project only uses built-in libraries:
+
+* `sqlite3`
+* `os`
+* `subprocess`
+* `datetime`
+
+✅ No extra installations needed!
+
+### 4. ▶️ Run the Program
+
+```bash
+python device_manager.py
+```
+
+---
+
+## 🧠 How the Code Works (Detailed Breakdown)
+
+### 🔹 1. **Database Initialization**
+
+The script initializes an SQLite database `institution_db.sqlite` with 4 tables:
+
+* `students`
+* `staff`
+* `registered_devices`
+* `device_activity_log`
+
+Each table has unique constraints for tracking and relationships.
+
+### 🔹 2. **Utility Functions**
+
+* `get_serial_and_model()`
+  Gets system serial/model (on Windows/Linux)
+
+* `get_connected_wifi()`
+  Reads the current Wi-Fi SSID (for activity logging)
+
+* `auto_remove_graduates()`
+  Automatically deletes students whose `graduation_year` < current year
+
+* `check_stolen_device(serial)`
+  Checks if a device is flagged as stolen
+
+---
+
+## 📋 Main Functionalities (Mapped to Menu Options)
+
+### 1️⃣ **Register a Student**
+
+Prompts for:
+
+* Admission Number
+* Name
+* Course
+* Graduation Year
+* Phone Number
+
+Adds the student to the `students` table.
+
+---
+
+### 2️⃣ **Register Staff**
+
+Prompts for:
+
+* Name
+* Department
+* Phone Number
+
+Adds staff to the `staff` table.
+
+---
+
+### 3️⃣ **Register Device**
+
+* Detects device info (for laptops) or prompts manually
+* Links device to either a student or staff using their ID
+* Stores it in `registered_devices`
+
+🚨 If the device is already marked as **stolen**, registration is blocked.
+
+---
+
+### 4️⃣ **Check Device Info**
+
+* Enter the serial number
+* Returns device owner, type, model, status (stolen or not)
+
+---
+
+### 5️⃣ **Report Stolen Device**
+
+* Prompts for serial number
+* Flags the device as stolen in the database
+* Logs its current Wi-Fi SSID and timestamp
+
+---
+
+### 6️⃣ **Show Connected WiFi**
+
+Displays the SSID of the currently connected Wi-Fi network.
+
+---
+
+### 7️⃣ **Remove Device**
+
+* Input user type (Student/Staff)
+* Provide admission number or phone number
+* Lists all linked devices
+* Deletes the selected one
+
+---
+
+### 8️⃣ **Show All Devices**
+
+Displays all registered devices with:
+
+* Owner name
+* User type
+* Device model
+* Serial number
+* Status (stolen or not)
+
+---
+
+## 🧹 Database Schema
+
+```text
+📍 students(id, admission_number, name, course, graduation_year, phone_number)
+📍 staff(id, name, department, phone_number)
+📍 registered_devices(id, serial_number, model_number, device_type, user_id, reported_stolen, user_type)
+📍 device_activity_log(id, serial_number, location, ssid, timestamp)
+```
+
+---
+
+## 💡 Ideas for Future Improvements
+
+* Add GUI using `Tkinter` or a web interface (Flask)
+* GPS-based location tracking
+* Authentication system for admin login
+* Export reports as PDF or CSV
+
+---
+
+## 👨‍💼 Author
+
+* **Your Name**
+* [GitHub Profile](https://github.com/your-username)
+
+---
+
+## 📜 License
+
+This project is open-source under the MIT License.
